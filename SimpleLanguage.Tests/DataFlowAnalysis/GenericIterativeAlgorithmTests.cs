@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using SimpleLang;
@@ -110,7 +110,7 @@ print (c);"
         [Test]
         public void AvailableExpressionsTest()
         {
-            /*var TAC = GenTAC(@"var a, b, c, d, x, u, e,g, y,zz,i; 
+            var TAC = GenTAC(@"var a, b, c, d, x, u, e,g, y,zz,i; 
 2: a = x + y;
 g = c + d;
 3: zz = 1;
@@ -123,30 +123,27 @@ e = zz + i;"
 );
             var expected = new List<(List<OneExpression>, List<OneExpression>)>()
             {
-                (new List<OneExpression>(), new List<OneExpression>()),
+                (new List<OneExpression>(), new List<OneExpression>()), //0
+
                 (new List<OneExpression>(), new List<OneExpression>()
-                { new OneExpression("PLUS", "x", "y"), new OneExpression("PLUS", "c", "d") } ),
+                { new OneExpression("PLUS", "x", "y"), new OneExpression("PLUS", "c", "d") } ), //1
 
                 (new List<OneExpression>() { new OneExpression("PLUS", "x", "y"), new OneExpression("PLUS", "c", "d") } ,
-                new List<OneExpression>() { new OneExpression("PLUS", "x", "y"), new OneExpression("PLUS", "c", "d")}),
+                new List<OneExpression>() { new OneExpression("PLUS", "x", "y"), new OneExpression("PLUS", "c", "d")}), //2
 
                 (new List<OneExpression>() { new OneExpression("PLUS", "x", "y"), new OneExpression("PLUS", "c", "d") },
                 new List<OneExpression>() { new OneExpression("LESS", "a", "b" ),
-                    new OneExpression("PLUS", "x", "y"), new OneExpression("PLUS", "c", "d")}),
+                    new OneExpression("PLUS", "x", "y"), new OneExpression("PLUS", "c", "d")}), //3
 
-                (new List<OneExpression>() { new OneExpression("LESS", "a", "b" ), new OneExpression("PLUS", "x", "y"), new OneExpression("PLUS", "c", "d")},
-                new List<OneExpression>() { new OneExpression("LESS", "a", "b" ) 
-                , new OneExpression("PLUS", "x", "y"), new OneExpression("PLUS", "c", "d")}
+                (new List<OneExpression>() {  new OneExpression("PLUS", "x", "y"),
+                    new OneExpression("PLUS", "c", "d"), new OneExpression("LESS", "a", "b" )},
+                new List<OneExpression>() { new OneExpression("PLUS", "x", "y")
+                , new OneExpression("LESS", "a", "b" )} ), //4
+
+                (new List<OneExpression>() { new OneExpression("LESS", "a", "b" ), new OneExpression("PLUS", "x", "y") },
+                new List<OneExpression>() { new OneExpression("PLUS", "c", "d" ) , new OneExpression("PLUS", "x", "y") } //5
                 ),
-
-                (new List<OneExpression>() { new OneExpression("LESS", "a", "b" ), new OneExpression("PLUS", "x", "y"), new OneExpression("PLUS", "c", "d")},
-                new List<OneExpression>() { new OneExpression("LESS", "a", "b" ) , new OneExpression("PLUS", "x", "y") }
-                ),
-
-                ( new List<OneExpression>() { new OneExpression("PLUS", "x", "y"), new OneExpression("LESS", "a", "b")},
-                  new List<OneExpression>() { new OneExpression("PLUS", "c", "d"), new OneExpression("PLUS", "x", "y")}
-                ),
-
+                (new List<OneExpression>(), new List<OneExpression>())
             };
 
             var cfg = new ControlFlowGraph(BasicBlockLeader.DivideLeaderToLeader(TAC));
@@ -169,17 +166,35 @@ e = zz + i;"
                 In.Clear();
                 Out.Clear();
             }
-            AssertSet(expected, actual);*/
+            //Assert.AreEqual(expected.Count, actual.Count);
+            AssertSet(expected, actual);
         }
-        private void AssertSet(
+        private void AssertSet( 
             List<(List<OneExpression>, List<OneExpression>)> expected,
             List<(List<OneExpression>, List<OneExpression>)> actual)
         {
             for (var i = 0; i < expected.Count; i++)
             {
-                Assert.True(SetEquals(expected[i].Item1, actual[i].Item1));
-                Assert.True(SetEquals(expected[i].Item2, actual[i].Item2));
+                Assert.True(ContainsExpression(expected[i].Item1, actual[i].Item1));
+                Assert.True(ContainsExpression(expected[i].Item2, actual[i].Item2));
             }
+        }
+        private bool ContainsExpression(List<OneExpression> listOfExpr1, List<OneExpression> listOfExpr2)
+        {
+            if (listOfExpr1.Count != listOfExpr2.Count)
+            {
+                return false;
+            }
+            var listOfString1 = listOfExpr1.Select(expression => expression.ToString()).ToList();
+            var listOfString2 = listOfExpr2.Select(expression => expression.ToString()).ToList();
+            foreach (var expr in listOfString1)
+            {
+                if (!listOfString2.Contains(expr))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
         private bool SetEquals(List<OneExpression> listOfExpr1, List<OneExpression> listOfExpr2)
         {
